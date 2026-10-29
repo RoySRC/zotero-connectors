@@ -59,6 +59,7 @@ Zotero.Connector_Browser = new function() {
 	};
 	
 	this.init = async function() {
+		await Zotero.TranslateHostFrameManager.init();
 		if (Zotero.isManifestV3) {
 			if (Zotero.isChromium) {
 				// Chrome recently stopped displaying context menus on button right-click
@@ -66,7 +67,6 @@ Zotero.Connector_Browser = new function() {
 				// in Chrome, but let's fix it on our side. Firefox, meanwhile, throws if 'action'
 				// is included in the context list.
 				buttonContext.push('action');
-				await Zotero.OffscreenManager.init();
 			}
 			this._tabInfo = _tabInfo = await Zotero.Utilities.Connector.createMV3PersistentObject('tabInfo', {ignoreKeys: ['selectCallback']});
 			setInterval(async () => {
@@ -868,16 +868,16 @@ Zotero.Connector_Browser = new function() {
 		Zotero.Connector.checkIsOnline().then(function(isOnline) {
 			var icon, title;
 			if (isOnline) {
-				icon = "images/zotero-new-z-16px.png";
+				icon = getHiDPIImagePaths("images/toolbar/z.png");
 				title = Zotero.getString('browserAction_status_online', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			else if (isOnline === null) {
 				// Zotero's status is unknown without localhost access, so don't claim it's offline
-				icon = "images/zotero-new-z-16px.png";
+				icon = getHiDPIImagePaths("images/toolbar/z.png");
 				title = Zotero.getString('appConnector', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			else {
-				icon = "images/zotero-z-16px-offline.png";
+				icon = "images/zotero-z-32px-offline.png";
 				title = Zotero.getString('browserAction_status_offline', ZOTERO_CONFIG.CLIENT_NAME);
 			}
 			if (typeof message === 'string') {
@@ -904,14 +904,23 @@ Zotero.Connector_Browser = new function() {
 		}
 		browser.action.enable(tabID);
 	}
+	
+	// Toolbar icon naming scheme is described above makeToolbarIcons in build.sh
+	function getHiDPIImagePaths(imageSrc) {
+		return {
+			32: imageSrc,
+			16: imageSrc.replace('.png', '@16.png'),
+			48: imageSrc.replace('.png', '@48.png'),
+		}
+	}
 
 	function _showTranslatorIcon(tab, translator) {
 		var itemType = translator.itemType;
 
 		browser.action.setIcon({
-			tabId:tab.id,
-			path:(itemType === "multiple"
-				? "images/treesource-collection.png"
+			tabId: tab.id,
+			path: getHiDPIImagePaths(itemType === "multiple"
+				? "images/toolbar/collection.png"
 				: Zotero.ItemTypes.getImageSrc(itemType))
 		});
 
@@ -924,7 +933,7 @@ Zotero.Connector_Browser = new function() {
 	function _showWebpageIcon(tab) {
 		browser.action.setIcon({
 			tabId: tab.id,
-			path: Zotero.ItemTypes.getImageSrc("webpage-gray")
+			path: getHiDPIImagePaths(Zotero.ItemTypes.getImageSrc("webpage-gray"))
 		});
 		let withSnapshot = Zotero.Connector.isOnline ? Zotero.Connector.prefs.automaticSnapshots :
 			Zotero.Prefs.get('automaticSnapshots');
@@ -937,7 +946,7 @@ Zotero.Connector_Browser = new function() {
 	this._showPDFIcon = function(tab) {
 		browser.action.setIcon({
 			tabId: tab.id,
-			path: browser.runtime.getURL('images/pdf.png')
+			path: getHiDPIImagePaths(Zotero.ItemTypes.getImageSrc('pdf'))
 		});
 		browser.action.setTitle({
 			tabId: tab.id,
@@ -1062,10 +1071,9 @@ Zotero.Connector_Browser = new function() {
 	
 
 	function _showMessageButton(tab) {
-		var icon = `${Zotero.platform}/zotero-z-32px-australis.png`;
 		browser.action.setIcon({
 			tabId: tab.id,
-			path: `images/${icon}`
+			path: getHiDPIImagePaths("images/toolbar/z.png")
 		});
 		browser.action.setTitle({
 			tabId: tab.id,
